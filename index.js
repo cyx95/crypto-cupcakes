@@ -18,12 +18,8 @@ app.use(express.urlencoded({ extended: true }));
 /* *********** YOUR CODE HERE *********** */
 // follow the module instructions: destructure config environment variables from process.env
 // follow the docs:
-const {
-  AUTH0_SECRET,
-  AUTH0_AUDIENCE, 
-  AUTH0_CLIENT_ID,
-  AUTH0_BASE_URL,
-} = process.env;
+const { AUTH0_SECRET, AUTH0_AUDIENCE, AUTH0_CLIENT_ID, AUTH0_BASE_URL } =
+  process.env;
 
 // define the config object
 const config = {
@@ -39,8 +35,23 @@ const config = {
 app.use(auth(config));
 
 // create a GET / route handler that sends back Logged in or Logged out
-app.get('/', (req, res) => {
-  res.send(req.oidc.isAuthenticated() ? 'Logged in' : 'Logged out');
+app.get("/", (req, res) => {
+  res.send(
+    req.oidc.isAuthenticated()
+      ? `<html>
+        <head>
+        </head>
+        <body>
+          <h1> My Web App,Inc.</h1>
+          <h1>Welcome, ${req.oidc.user.name}</h1>
+          <p>Username: ${req.oidc.user.nickname}</p>
+          <p>${req.oidc.user.email}</p>
+          <img src=${req.oidc.user.picture}>
+        </body>
+      </html>`
+      : "Logged out"
+  );
+  console.log(req.oidc.user);
 });
 
 app.get("/cupcakes", async (req, res, next) => {
