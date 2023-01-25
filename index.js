@@ -25,7 +25,7 @@ const { AUTH0_SECRET, AUTH0_AUDIENCE, AUTH0_CLIENT_ID, AUTH0_BASE_URL } =
 
 // define the config object
 const config = {
-  authRequired: true,
+  authRequired: false,
   auth0Logout: true,
   secret: AUTH0_SECRET,
   baseURL: AUTH0_AUDIENCE,
@@ -50,6 +50,24 @@ app.use(async (req, res, next) => {
     next();
   } catch (error) {
     console.error(error);
+  }
+});
+
+// Authorization middleware
+app.use(async (req, res, next) => {
+  try {
+    const auth = req.header("Authorization");
+    if (!auth) {
+      next();
+    } else {
+      const [, token] = auth.split(" ");
+      const user = jwt.verify(token, JWT_SECRET);
+      req.user = user;
+      next();
+    }
+  } catch ({ message }) {
+    res.sendStatus(401);
+    next({ message });
   }
 });
 
@@ -95,6 +113,27 @@ app.get("/me", async (req, res, next) => {
       res.send({ user, token });
     } else {
       res.status(401).send("User does not exist");
+    }
+  } catch (error) {
+    console.error(error);
+    next(error);
+  }
+});
+
+app.post("/cupcakes", async (req, res, next) => {
+  try {
+    if (!req.user) {
+      res.sendStatus(401);
+    } else {
+      const userId = req.user.id;
+      const { title, flavor, stars } = req.body;
+      const cupcake = await Cupcake.create({ title, flavor, stars, userId });
+      res.send({
+        id: cupcake.id,
+        title: cupcake.title,
+        flavor: cupcake.flavor,
+        stars: cupcake.stars,
+      });
     }
   } catch (error) {
     console.error(error);
