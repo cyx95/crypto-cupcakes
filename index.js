@@ -4,6 +4,8 @@ const express = require("express");
 const app = express();
 const morgan = require("morgan");
 const { PORT = 3000 } = process.env;
+const jwt = require("jsonwebtoken");
+const { JWT_SECRET } = process.env;
 // TODO - require express-openid-connect and destructure auth from it
 const { auth } = require("express-openid-connect");
 
@@ -34,6 +36,23 @@ const config = {
 // attach Auth0 OIDC auth router
 app.use(auth(config));
 
+// middleware to save user information to the database
+app.use(async (req, res, next) => {
+  try {
+    const [user] = await User.findOrCreate({
+      where: {
+        username: "hammercyx",
+        name: "ying ying Xin",
+        email: "hammercyx@gmail.com",
+      },
+    });
+    console.log(user);
+    next();
+  } catch (error) {
+    console.error(error);
+  }
+});
+
 // create a GET / route handler that sends back Logged in or Logged out
 app.get("/", (req, res) => {
   res.send(
@@ -51,13 +70,32 @@ app.get("/", (req, res) => {
       </html>`
       : "Logged out"
   );
-  console.log(req.oidc.user);
 });
 
 app.get("/cupcakes", async (req, res, next) => {
   try {
     const cupcakes = await Cupcake.findAll();
     res.send(cupcakes);
+  } catch (error) {
+    console.error(error);
+    next(error);
+  }
+});
+
+app.get("/me", async (req, res, next) => {
+  try {
+    const user = await User.findOne({
+      where: {
+        username: req.oidc.user.nickname,
+      },
+      raw: true,
+    });
+    if (user) {
+      const token = jwt.sign(user, JWT_SECRET, { expiresIn: "1w" });
+      res.send({ user, token });
+    } else {
+      res.status(401).send("User does not exist");
+    }
   } catch (error) {
     console.error(error);
     next(error);
