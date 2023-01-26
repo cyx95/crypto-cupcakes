@@ -36,23 +36,6 @@ const config = {
 // attach Auth0 OIDC auth router
 app.use(auth(config));
 
-// middleware to save user information to the database
-app.use(async (req, res, next) => {
-  try {
-    const [user] = await User.findOrCreate({
-      where: {
-        username: "hammercyx",
-        name: "ying ying Xin",
-        email: "hammercyx@gmail.com",
-      },
-    });
-    console.log(user);
-    next();
-  } catch (error) {
-    console.error(error);
-  }
-});
-
 // Authorization middleware
 app.use(async (req, res, next) => {
   try {
@@ -71,6 +54,23 @@ app.use(async (req, res, next) => {
   }
 });
 
+// middleware to save user information to the database
+app.use(async (req, res, next) => {
+  try {
+    const [user] = await User.findOrCreate({
+      where: {
+        username: `${req.oidc.user.nickname}`,
+        name: `${req.oidc.user.name}`,
+        email: `${req.oidc.user.email}`
+      },
+    });
+    console.log(user);
+    next();
+  } catch (error) {
+    console.error(error);
+  }
+});
+
 // create a GET / route handler that sends back Logged in or Logged out
 app.get("/", (req, res) => {
   res.send(
@@ -79,9 +79,9 @@ app.get("/", (req, res) => {
         <head>
         </head>
         <body>
-          <h1> My Web App,Inc.</h1>
+          <h1 style="text-align: center;"> My Web App,Inc.</h1>
           <h1>Welcome, ${req.oidc.user.name}</h1>
-          <p>Username: ${req.oidc.user.nickname}</p>
+          <p><b>Username: ${req.oidc.user.nickname}</b></p>
           <p>${req.oidc.user.email}</p>
           <img src=${req.oidc.user.picture}>
         </body>
